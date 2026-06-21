@@ -1,0 +1,7 @@
+keyword_top_k: 10
+keyword_algorithm: tfidf_freq_len
+merge_candidate_threshold: 0.45
+llm_merge_confidence_threshold: 0.80
+include_heading_path: true
+include_keyword_weight: false
+max_section_chars: 6000
