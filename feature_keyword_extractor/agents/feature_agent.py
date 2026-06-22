@@ -6,8 +6,7 @@ import re
 from typing import Any, Dict, List
 
 from feature_keyword_extractor.agents.schemas import LlmCapabilityResponse
-from feature_keyword_extractor.cluster import Cluster
-from feature_keyword_extractor.schemas import ParsedDocument
+from feature_keyword_extractor.schemas import HeadingNode, ParsedDocument
 
 
 FEATURE_PROMPT = """你是产品策划文档分析专家。请根据标题依赖图和正文记号，判断哪些标题共同描述同一项原子业务能力。
@@ -40,8 +39,9 @@ class FeatureExtractionAgent:
     def __init__(self, llm: Any | None = None):
         self.llm = llm or self._build_default_llm()
 
-    def extract(self, document: ParsedDocument, cluster: Cluster) -> LlmCapabilityResponse:
-        payload = self._payload(document, cluster)
+    def extract(self, document: ParsedDocument, heading_nodes: List[HeadingNode] | None = None) -> LlmCapabilityResponse:
+        nodes = heading_nodes if heading_nodes is not None else document.heading_nodes
+        payload = self._payload(document, nodes)
         raw = self._invoke(FEATURE_PROMPT.format(payload=json.dumps(payload, ensure_ascii=False, indent=2)))
         response = LlmCapabilityResponse.model_validate_json(_extract_json(raw))
         response.validate_references(
@@ -55,12 +55,12 @@ class FeatureExtractionAgent:
         return getattr(result, "content", result)
 
     @staticmethod
-    def _payload(document: ParsedDocument, cluster: Cluster) -> Dict[str, Any]:
+    def _payload(document: ParsedDocument, heading_nodes: List[HeadingNode]) -> Dict[str, Any]:
         heading_by_id = document.heading_by_id
         body_by_id = document.body_by_id
         nodes = []
         body_ids = set()
-        for node in cluster.items:
+        for node in heading_nodes:
             body_ids.update(node.body_ids)
             nodes.append(
                 {
@@ -80,7 +80,6 @@ class FeatureExtractionAgent:
             )
         return {
             "doc_id": document.doc_id,
-            "cluster_id": cluster.cluster_id,
             "heading_dependency_graph": nodes,
             "available_body_ids": sorted(body_ids),
         }

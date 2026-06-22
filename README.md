@@ -21,10 +21,9 @@
 ```text
 文档
   -> 标题依赖图 + 正文编号
-  -> 标题聚类
   -> DeepSeek 判断业务能力边界
   -> 传统 NLP 提取关键词
-  -> DeepSeek 合并相似功能点
+  -> 语义聚类 / 文本预过滤 + DeepSeek 合并相似功能点
   -> CSV / JSON 输出
 ```
 
@@ -33,7 +32,7 @@
 - 大模型负责业务语义判断。
 - 传统 NLP 负责关键词统计。
 - 正文编号负责结果可追溯。
-- 聚类负责降低大模型调用成本。
+- 合并阶段用语义聚类或文本预过滤降低大模型调用成本。
 
 ## 1. 环境要求
 
@@ -107,11 +106,7 @@ python3 run.py --input ./input_docs --output ./outputs
 常用参数：
 
 ```bash
-python3 run.py \
-  --input ./input_docs \
-  --output ./outputs \
-  --keyword-top-k 10 \
-  --merge-threshold 0.45
+python run.py --input ./input_docs --output ./outputs --keyword-top-k 10 --merge-name-similarity 0.3
 ```
 
 参数说明：
@@ -119,9 +114,10 @@ python3 run.py \
 - `--input`：输入文档目录。
 - `--output`：输出目录。
 - `--keyword-top-k`：每个功能点保留的关键词数量，默认 `10`。
-- `--merge-threshold`：标题聚类相似度阈值，默认 `0.45`。
-- `--cluster-backend`：标题聚类方式，支持 `tfidf` 和 `embedding`，默认 `tfidf`。
-- `--embedding-model`：embedding 模型名称，默认 `BAAI/bge-m3`。
+- `--merge-cluster-backend`：功能点合并策略，`none`（默认，SequenceMatcher 预过滤）、`tfidf`（TF-IDF 语义聚类）、`embedding`（本地 Embedding 模型语义聚类）。
+- `--merge-similarity-threshold`：语义聚类相似度阈值，默认 `0.45`，仅 `tfidf`/`embedding` 模式生效。
+- `--merge-name-similarity`：SequenceMatcher 预过滤阈值，默认 `0.3`，仅 `none` 模式生效。
+- `--embedding-model`：Embedding 模型名称，默认 `BAAI/bge-m3`，仅 `embedding` 模式生效。
 
 ## 6. 查看结果
 
@@ -135,6 +131,7 @@ outputs/
   errors.json
   merge_decisions.json
   capability_index.json
+  timing.json
 ```
 
 推荐优先查看：
@@ -179,32 +176,46 @@ JSON 示例：
 | `errors.json` | LLM 调用或结果校验失败记录 |
 | `merge_decisions.json` | 功能点语义合并判断记录 |
 | `capability_index.json` | 合并后的功能能力索引 |
+| `timing.json` | LLM 调用计时统计（提取 + 合并） |
 
-## 8. 聚类模式说明
+## 8. 功能点合并策略说明
 
-默认使用 TF-IDF 做标题聚类：
+合并阶段支持三种策略，通过 `--merge-cluster-backend` 切换：
+
+### 默认：SequenceMatcher 预过滤 (`none`)
+
+用字符级文本相似度预过滤，低于阈值的配对跳过 LLM。
 
 ```bash
-python run.py --input ./input_docs --output ./outputs
+python run.py --input ./input_docs --output ./outputs --merge-name-similarity 0.3
 ```
 
-优点：
+### TF-IDF 语义聚类 (`tfidf`)
 
-- 快。
-- 不下载本地大模型。
-- 部署简单。
+用 TF-IDF 字符 n-gram 计算功能点名称的语义相似度，相似的功能点先聚为一簇，再在簇内调 LLM 判断。
 
-如果文档很多、标题表述差异很大，可以启用本地 embedding 聚类：
+```bash
+python run.py --input ./input_docs --output ./outputs --merge-cluster-backend tfidf --merge-similarity-threshold 0.45
+```
+
+### 本地 Embedding 语义聚类 (`embedding`)
+
+用本地 Embedding 模型（如 `BAAI/bge-m3`）计算语义相似度，对中文语义理解更好。
 
 ```bash
 pip install -r requirements-embedding.txt
-python run.py \
-  --input ./input_docs \
-  --output ./outputs \
-  --cluster-backend embedding
+python run.py --input ./input_docs --output ./outputs --merge-cluster-backend embedding --merge-similarity-threshold 0.5
 ```
 
-注意：embedding 模式会下载 `BAAI/bge-m3`，模型文件较大，首次运行较慢。
+注意：embedding 模式会下载模型文件，首次运行较慢。
+
+### 策略选择建议
+
+| 场景 | 推荐策略 |
+| --- | --- |
+| 文档少、功能点不多 | `none`（默认） |
+| 文档多、名称表述差异大 | `tfidf` |
+| 需要精确语义匹配、资源充足 | `embedding` |
 
 ## 9. 常见问题
 

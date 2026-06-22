@@ -101,7 +101,11 @@ DEFAULT_GENERIC_WORDS = {
     "卡片",
     "提升",
     "提醒",
-    "流程"
+    "流程",
+    "action",
+    "viewpage",
+    "https",
+    "http",
 }
 
 
@@ -151,11 +155,20 @@ class KeywordExtractor:
         scored.sort(key=lambda item: (-item.score, item.term))
         return scored[: self.top_k]
 
+    @staticmethod
+    def _is_noise(token: str) -> bool:
+        if re.fullmatch(r"\d+", token):
+            return True
+        if re.fullmatch(r"[A-Za-z0-9]+", token):
+            return True
+        return False
+
     def _tokens(self, text: str) -> List[str]:
+        import jieba.posseg as pseg
         clean_text = re.sub(r"[^\u4e00-\u9fffA-Za-z0-9._+\-#]+", " ", text)
         tokens = []
-        for token in jieba.lcut(clean_text):
-            token = token.strip()
+        for word, pos in pseg.cut(clean_text):
+            token = word.strip()
             if not token or token.isspace():
                 continue
             if token in self.domain_terms:
@@ -165,7 +178,10 @@ class KeywordExtractor:
                 continue
             if token in self.stopwords or token in self.generic_words:
                 continue
-            tokens.append(token)
+            if self._is_noise(token):
+                continue
+            if pos[0] in ("n", "v", "a"):
+                tokens.append(token)
         return tokens
 
     @staticmethod

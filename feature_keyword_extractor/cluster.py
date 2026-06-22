@@ -19,7 +19,7 @@ class Cluster:
 class Clusterer:
     def __init__(
         self,
-        similarity_threshold: float = 0.45,
+        similarity_threshold: float = 0.3,
         backend: str = "tfidf",
         embedding_model: str = "BAAI/bge-m3",
     ):
@@ -34,16 +34,29 @@ class Clusterer:
             return [Cluster(cluster_id=self._cluster_id([headings[0]]), items=headings)]
 
         corpus = [self._heading_text(node) for node in headings]
-        similarity = self._similarity_matrix(corpus)
+        groups = self.cluster_texts(corpus)
+        clusters: List[Cluster] = []
+        for group_indexes in groups:
+            items = [headings[i] for i in group_indexes]
+            clusters.append(Cluster(cluster_id=self._cluster_id(items), items=items))
+        return clusters
+
+    def cluster_texts(self, texts: List[str]) -> List[List[int]]:
+        if not texts:
+            return []
+        if len(texts) == 1:
+            return [[0]]
+
+        similarity = self._similarity_matrix(texts)
         if similarity is None:
-            return [Cluster(cluster_id=self._cluster_id([node]), items=[node]) for node in headings]
+            return [[i] for i in range(len(texts))]
 
         visited = set()
-        clusters: List[Cluster] = []
-        for idx, node in enumerate(headings):
+        groups: List[List[int]] = []
+        for idx in range(len(texts)):
             if idx in visited:
                 continue
-            group_indexes = {idx}
+            group = {idx}
             frontier = [idx]
             visited.add(idx)
             while frontier:
@@ -51,11 +64,10 @@ class Clusterer:
                 for other, score in enumerate(similarity[current]):
                     if other not in visited and score >= self.similarity_threshold:
                         visited.add(other)
-                        group_indexes.add(other)
+                        group.add(other)
                         frontier.append(other)
-            items = [headings[item_idx] for item_idx in sorted(group_indexes)]
-            clusters.append(Cluster(cluster_id=self._cluster_id(items), items=items))
-        return clusters
+            groups.append(sorted(group))
+        return groups
 
     @staticmethod
     def _heading_text(node: HeadingNode) -> str:
@@ -67,10 +79,19 @@ class Clusterer:
             if embedding_similarity is not None:
                 return embedding_similarity
         try:
-            vectors = TfidfVectorizer(analyzer="char_wb", ngram_range=(2, 4)).fit_transform(corpus)
+            segmented = self._segment(corpus)
+            vectors = TfidfVectorizer().fit_transform(segmented)
             return cosine_similarity(vectors)
         except ValueError:
             return None
+
+    @staticmethod
+    def _segment(corpus: List[str]) -> List[str]:
+        try:
+            import jieba
+            return [" ".join(jieba.cut(text)) for text in corpus]
+        except ImportError:
+            return corpus
 
     def _embedding_similarity(self, corpus: List[str]):
         try:

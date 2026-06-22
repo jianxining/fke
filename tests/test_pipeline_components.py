@@ -161,10 +161,34 @@ def test_capability_merger_accepts_null_canonical_name_when_llm_rejects_merge():
                 reason="二者属于不同业务能力。",
             )
 
-    merged = CapabilityMerger(FakeMergeAgent(), confidence_threshold=0.8).merge([first, second])
+    merged = CapabilityMerger(FakeMergeAgent(), confidence_threshold=0.8, name_similarity_threshold=0.0).merge([first, second])
 
     assert [item.feature_name for item in merged.capabilities] == [
         "手机号验证码登录能力",
         "SIM卡状态识别能力",
     ]
     assert merged.decisions[0]["合并结果"] is False
+
+
+def test_capability_merger_skips_pairs_below_name_similarity_threshold():
+    first = BusinessCapability(
+        feature_name="手机号验证码登录能力",
+        description="支持用户通过手机号和验证码完成登录。",
+        related_heading_ids=["H002"],
+        related_body_ids=["B001"],
+    )
+    second = BusinessCapability(
+        feature_name="SIM卡状态识别能力",
+        description="识别无卡、换卡、停机和漫游等状态。",
+        related_heading_ids=["H003"],
+        related_body_ids=["B002"],
+    )
+
+    class FakeMergeAgent:
+        def judge(self, capabilities, similarity_hint=None):
+            raise AssertionError("LLM judge should not be called for dissimilar names")
+
+    merged = CapabilityMerger(FakeMergeAgent(), confidence_threshold=0.8, name_similarity_threshold=0.3).merge([first, second])
+
+    assert len(merged.capabilities) == 2
+    assert merged.decisions == []
