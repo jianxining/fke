@@ -20,7 +20,7 @@ class ExtractionPipeline:
         feature_agent: FeatureExtractionAgent,
         keyword_extractor: KeywordExtractor | None = None,
         merge_agent=None,
-        merge_name_similarity_threshold: float = 0.3,
+        merge_name_similarity_threshold: float = 0.4,
         merge_clusterer=None,
     ):
         self.feature_agent = feature_agent
@@ -172,7 +172,7 @@ def _print_timing(timing: dict) -> None:
     print(f"{'='*50}")
     print(f"功能点提取: {ext['call_count']} 次调用, 总耗时 {ext['total_seconds']:.3f}s")
     for item in ext["calls"]:
-        status = "✓" if item["success"] else "✗"
+        status = "[OK]" if item["success"] else "[FAIL]"
         caps = f", {item['capability_count']}个功能点" if item["success"] else ""
         print(f"  {status} {item['doc_id']}: {item['elapsed_seconds']:.3f}s{caps}")
     print(f"功能点合并: {merge['call_count']} 次调用, 总耗时 {merge['total_seconds']:.3f}s")

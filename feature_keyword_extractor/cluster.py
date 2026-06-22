@@ -4,6 +4,7 @@ import hashlib
 from dataclasses import dataclass
 from typing import List
 
+import jieba
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
@@ -85,8 +86,7 @@ class Clusterer:
         except ValueError:
             return None
 
-    @staticmethod
-    def _segment(corpus: List[str]) -> List[str]:
+    def _segment(self, corpus: List[str]) -> List[str]:
         try:
             import jieba
             return [" ".join(jieba.cut(text)) for text in corpus]

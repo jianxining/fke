@@ -21,7 +21,7 @@ class CapabilityMerger:
         self,
         merge_agent,
         confidence_threshold: float = 0.8,
-        name_similarity_threshold: float = 0.3,
+        name_similarity_threshold: float = 0.4,
         clusterer=None,
     ):
         self.merge_agent = merge_agent
@@ -55,7 +55,18 @@ class CapabilityMerger:
                 )
             }
             t0 = time.perf_counter()
-            decision = self.merge_agent.judge([capabilities[left], capabilities[right]], similarity_hint=hint)
+            try:
+                decision = self.merge_agent.judge([capabilities[left], capabilities[right]], similarity_hint=hint)
+            except Exception as exc:
+                elapsed = time.perf_counter() - t0
+                timing.append({
+                    "pair": [capabilities[left].feature_name, capabilities[right].feature_name],
+                    "name_similarity": hint["name_similarity"],
+                    "elapsed_seconds": round(elapsed, 3),
+                    "should_merge": False,
+                    "error": str(exc),
+                })
+                continue
             elapsed = time.perf_counter() - t0
             timing.append({
                 "pair": [capabilities[left].feature_name, capabilities[right].feature_name],

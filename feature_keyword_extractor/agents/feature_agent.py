@@ -97,7 +97,7 @@ class FeatureExtractionAgent:
         return ChatOpenAI(
             api_key=api_key,
             base_url=os.getenv("DEEPSEEK_BASE_URL"),
-            model=os.getenv("DEEPSEEK_MODEL", "deepseekV4.pro"),
+            model=os.getenv("DEEPSEEK_MODEL", "deepseek-v4-flash"),
             temperature=0,
         )
 

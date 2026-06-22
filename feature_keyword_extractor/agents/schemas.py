@@ -45,7 +45,7 @@ class MergeDecision(BaseModel):
 
     should_merge: bool = Field(alias="合并结果")
     canonical_name: Optional[str] = Field(default=None, alias="合并后名称")
-    confidence: float = Field(alias="置信度")
+    confidence: float = Field(default=0.0, alias="置信度")
     reason: str = Field(alias="理由")
 
     @model_validator(mode="after")

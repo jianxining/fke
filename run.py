@@ -20,9 +20,9 @@ def main() -> None:
     parser.add_argument("--keyword-top-k", type=int, default=10)
     parser.add_argument("--merge-cluster-backend", choices=["none", "tfidf", "embedding"], default="none",
                         help="Merge clustering backend. 'none' uses SequenceMatcher pre-filter, 'tfidf'/'embedding' uses semantic clustering.")
-    parser.add_argument("--merge-similarity-threshold", type=float, default=0.3,
+    parser.add_argument("--merge-similarity-threshold", type=float, default=0.6,
                         help="Semantic similarity threshold for merge clustering (used with tfidf/embedding backend).")
-    parser.add_argument("--merge-name-similarity", type=float, default=0.3,
+    parser.add_argument("--merge-name-similarity", type=float, default=0.6,
                         help="SequenceMatcher pre-filter threshold (used when merge-cluster-backend=none).")
     parser.add_argument("--embedding-model", default="BAAI/bge-m3",
                         help="Embedding model for merge clustering (used with embedding backend).")

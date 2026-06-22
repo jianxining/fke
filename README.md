@@ -100,13 +100,17 @@ DOCX 文档建议使用标准 Word 样式：
 ## 5. 运行
 
 ```bash
-python3 run.py --input ./input_docs --output ./outputs
+python3 run.py --input C:\Users\11196205\input_docs --output ./outputs
 ```
 
 常用参数：
 
 ```bash
-python run.py --input ./input_docs --output ./outputs --keyword-top-k 10 --merge-name-similarity 0.3
+python run.py --input C:\Users\11196205\input_docs --output ./outputs --keyword-top-k 10 --merge-name-similarity 0.3
+```
+
+```bash
+python run.py --input C:\Users\11196205\input_docs --output ./outputs --keyword-top-k 10 --merge-cluster-backend tfidf
 ```
 
 参数说明：
