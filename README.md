@@ -48,7 +48,7 @@
 进入项目目录：
 
 ```bash
-cd vivo
+cd fke
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -57,7 +57,7 @@ pip install -r requirements.txt
 Windows PowerShell：
 
 ```powershell
-cd vivo
+cd fke
 python -m venv .venv
 .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
@@ -185,7 +185,7 @@ JSON 示例：
 默认使用 TF-IDF 做标题聚类：
 
 ```bash
-python3 run.py --input ./input_docs --output ./outputs
+python run.py --input ./input_docs --output ./outputs
 ```
 
 优点：
@@ -198,7 +198,7 @@ python3 run.py --input ./input_docs --output ./outputs
 
 ```bash
 pip install -r requirements-embedding.txt
-python3 run.py \
+python run.py \
   --input ./input_docs \
   --output ./outputs \
   --cluster-backend embedding

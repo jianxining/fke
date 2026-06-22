@@ -16,6 +16,7 @@ class _MutableHeading:
     level: int
     child_ids: List[str] = field(default_factory=list)
     body_ids: List[str] = field(default_factory=list)
+    pending_body_text: List[str] = field(default_factory=list)
 
 
 class SectionGraphBuilder:
@@ -36,6 +37,7 @@ class SectionGraphBuilder:
 
         effective_level = min(max(level, 1), 3)
         while self._stack and self._stack[-1].level >= effective_level:
+            self._flush_pending_body(self._stack[-1])
             self._stack.pop()
 
         parent = self._stack[-1] if self._stack else None
@@ -62,12 +64,22 @@ class SectionGraphBuilder:
         if not self._stack:
             self.add_heading("未命名内容", 1)
 
+        self._stack[-1].pending_body_text.append(clean_text)
+
+    def _flush_pending_body(self, node: _MutableHeading) -> None:
+        """将累积的正文内容flush为一个body_block"""
+        if not node.pending_body_text:
+            return
         self._body_seq += 1
         body_id = f"B{self._body_seq:03d}"
-        self._body_blocks.append(BodyBlock(body_id=body_id, text=clean_text))
-        self._stack[-1].body_ids.append(body_id)
+        combined_text = "\n".join(node.pending_body_text)
+        self._body_blocks.append(BodyBlock(body_id=body_id, text=combined_text))
+        node.body_ids.append(body_id)
+        node.pending_body_text = []
 
     def to_document(self) -> ParsedDocument:
+        for node in self._stack:
+            self._flush_pending_body(node)
         return ParsedDocument(
             doc_id=make_doc_id(self.path),
             heading_nodes=[

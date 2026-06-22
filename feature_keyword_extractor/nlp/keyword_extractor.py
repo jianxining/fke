@@ -40,6 +40,68 @@ DEFAULT_GENERIC_WORDS = {
     "相关",
     "信息",
     "内容",
+    "安全事件",
+    "诈骗电话",
+    "紧急电话",
+    "恶意应用",
+    "存储空间不足",
+    "实名",
+    "清除实名",
+    "二要素",
+    "人脸实名",
+    "冻结",
+    "解冻",
+    "风控",
+    "注销",
+    "自助注销",
+    "演示机",
+    "门店机",
+    "设备管理",
+    "信任设备",
+    "删除设备",
+    "Pad",
+    "折叠屏",
+    "登录",
+    "登录态",
+    "开机引导",
+    "密码",
+    "改密",
+    "找回密码",
+    "换绑",
+    "修改手机",
+    "家人共享",
+    "家庭群组",
+    "孩子账号",
+    "云服务",
+    "查找设备",
+    "双重验证",
+    "免校验",
+    "学生认证",
+    "V7.",
+    "V6.",
+    "EX6.",
+    "版本",
+    "灰度",
+    "上线",
+    "黑名单",
+    # 通用业务无关词
+    "优化",
+    "增加",
+    "事件",
+    "保护",
+    "减少",
+    "及时",
+    "通知",
+    "确认",
+    "使用",
+    "符合",
+    "加入",
+    "同意",
+    "标题",
+    "卡片",
+    "提升",
+    "提醒",
+    "流程"
 }
 
 
@@ -83,7 +145,7 @@ class KeywordExtractor:
             tf_norm = count / max_tf
             tfidf = tfidf_scores.get(term, 0.0)
             length_weight = math.log(len(term) + 1)
-            score = 0.65 * tfidf + 0.25 * tf_norm + 0.10 * length_weight
+            score = 0.55 * tfidf + 0.15 * tf_norm + 0.30 * length_weight
             scored.append(KeywordScore(term=term, score=round(score, 6)))
 
         scored.sort(key=lambda item: (-item.score, item.term))
