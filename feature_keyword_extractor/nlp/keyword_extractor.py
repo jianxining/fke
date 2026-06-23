@@ -203,12 +203,18 @@ class KeywordExtractor:
         else:
             tfidf_scores = self._tfidf_scores(tokenized_docs)
 
+        # 维度归一化: tf_norm 已在 [0,1]; length_weight 通过 min-max 归一化到 [0,1]
+        length_weights = [math.log(len(term) + 1) for term in term_frequency]
+        min_len_w = min(length_weights) if length_weights else 0.0
+        max_len_w = max(length_weights) if length_weights else 1.0
+        len_range = max_len_w - min_len_w or 1.0
+
         scored = []
         for term, count in term_frequency.items():
             tf_norm = count / max_tf
             tfidf = tfidf_scores.get(term, 0.0)
-            length_weight = math.log(len(term) + 1)
-            score = 0.55 * tfidf + 0.15 * tf_norm + 0.30 * length_weight
+            length_weight = (math.log(len(term) + 1) - min_len_w) / len_range
+            score = 0.75 * tfidf + 0.05 * tf_norm + 0.20 * length_weight
             scored.append(KeywordScore(term=term, score=round(score, 6)))
 
         scored.sort(key=lambda item: (-item.score, item.term))
