@@ -35,6 +35,7 @@ FEATURE_PROMPT = """你是产品策划文档分析专家。请根据标题依赖
 """
 
 
+# 特征提取智能体
 class FeatureExtractionAgent:
     def __init__(self, llm: Any | None = None):
         self.llm = llm or self._build_default_llm()

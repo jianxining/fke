@@ -15,7 +15,7 @@ from feature_keyword_extractor.pipeline import ExtractionPipeline
 def main() -> None:
     load_dotenv()
     parser = argparse.ArgumentParser(description="Extract business capabilities and keywords from DOCX/Markdown docs.")
-    parser.add_argument("--input", type=Path, help="Input directory containing .docx/.md files.",default="./input_docs")
+    parser.add_argument("--input", type=Path, help="Input directory containing .docx/.md files.",default="C:/Users/11196205/input_docs")
     parser.add_argument("--output", type=Path, help="Output directory for CSV/JSON/audit files.",default="./outputs")
     parser.add_argument("--keyword-top-k", type=int, default=10)
     parser.add_argument("--merge-cluster-backend", choices=["none", "tfidf", "embedding"], default="none",

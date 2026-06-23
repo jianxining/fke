@@ -31,6 +31,10 @@ class ExtractionPipeline:
 
     def run(self, input_dir: Path, output_dir: Path) -> Dict[str, dict]:
         documents = parse_documents(input_dir)
+
+        all_body_texts = [block.text for doc in documents for block in doc.body_blocks]
+        global_idf = self.keyword_extractor.build_global_idf(all_body_texts)
+
         records: List[Tuple[ParsedDocument, BusinessCapability]] = []
         keywords_by_feature: Dict[str, List[str]] = {}
         errors = []
@@ -56,7 +60,7 @@ class ExtractionPipeline:
             for capability in response.business_capabilities:
                 records.append((document, capability))
                 texts = [body_by_id[body_id].text for body_id in capability.related_body_ids if body_id in body_by_id]
-                keywords = [item.term for item in self.keyword_extractor.extract(texts)]
+                keywords = [item.term for item in self.keyword_extractor.extract(texts, idf_scores=global_idf)]
                 keywords_by_feature.setdefault(capability.feature_name, [])
                 for keyword in keywords:
                     if keyword not in keywords_by_feature[capability.feature_name]:
@@ -76,7 +80,7 @@ class ExtractionPipeline:
                 (document, _with_feature_name(capability, merge_result.canonical_by_index[index]))
                 for index, (document, capability) in enumerate(records)
             ]
-            keywords_by_feature = self._keywords_for_merged_capabilities(records)
+            keywords_by_feature = self._keywords_for_merged_capabilities(records, global_idf=global_idf)
 
         aggregator = ResultAggregator()
         result = aggregator.aggregate(records, keywords_by_feature)
@@ -93,12 +97,13 @@ class ExtractionPipeline:
     def _keywords_for_merged_capabilities(
         self,
         records: List[Tuple[ParsedDocument, BusinessCapability]],
+        global_idf: dict[str, float] | None = None,
     ) -> Dict[str, List[str]]:
         keywords_by_feature: Dict[str, List[str]] = {}
         for document, capability in records:
             body_by_id = document.body_by_id
             texts = [body_by_id[body_id].text for body_id in capability.related_body_ids if body_id in body_by_id]
-            for keyword_score in self.keyword_extractor.extract(texts):
+            for keyword_score in self.keyword_extractor.extract(texts, idf_scores=global_idf):
                 keywords_by_feature.setdefault(capability.feature_name, [])
                 if keyword_score.term not in keywords_by_feature[capability.feature_name]:
                     keywords_by_feature[capability.feature_name].append(keyword_score.term)

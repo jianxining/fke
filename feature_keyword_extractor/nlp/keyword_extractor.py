@@ -185,7 +185,7 @@ class KeywordExtractor:
         for term in self.domain_terms:
             jieba.add_word(term, freq=10_000)
 
-    def extract(self, texts: Iterable[str]) -> List[KeywordScore]:
+    def extract(self, texts: Iterable[str], idf_scores: dict[str, float] | None = None) -> List[KeywordScore]:
         docs = [text for text in texts if text and text.strip()]
         if not docs:
             return []
@@ -197,7 +197,11 @@ class KeywordExtractor:
 
         term_frequency = Counter(all_tokens)
         max_tf = max(term_frequency.values())
-        tfidf_scores = self._tfidf_scores(tokenized_docs)
+
+        if idf_scores is not None:
+            tfidf_scores = self._tfidf_with_global_idf(tokenized_docs, idf_scores)
+        else:
+            tfidf_scores = self._tfidf_scores(tokenized_docs)
 
         scored = []
         for term, count in term_frequency.items():
@@ -209,6 +213,34 @@ class KeywordExtractor:
 
         scored.sort(key=lambda item: (-item.score, item.term))
         return scored[: self.top_k]
+
+    def build_global_idf(self, texts: Iterable[str]) -> dict[str, float]:
+        docs = [text for text in texts if text and text.strip()]
+        if not docs:
+            return {}
+
+        tokenized_docs = [self._tokens(text) for text in docs]
+        try:
+            vectorizer = TfidfVectorizer(tokenizer=lambda text: text.split(), token_pattern=None)
+            vectorizer.fit([" ".join(tokens) for tokens in tokenized_docs])
+            names = vectorizer.get_feature_names_out()
+            idf_values = vectorizer.idf_
+            return {name: float(idf) for name, idf in zip(names, idf_values)}
+        except ValueError:
+            return {}
+
+    @staticmethod
+    def _tfidf_with_global_idf(tokenized_docs: List[List[str]], idf_scores: dict[str, float]) -> dict[str, float]:
+        all_tokens = [token for doc in tokenized_docs for token in doc]
+        tf = Counter(all_tokens)
+        max_tf = max(tf.values()) if tf else 1.0
+        scores: dict[str, float] = {}
+        for term, count in tf.items():
+            tf_norm = count / max_tf
+            idf = idf_scores.get(term, 1.0)
+            scores[term] = tf_norm * idf
+        max_score = max(scores.values()) if scores else 1.0
+        return {term: score / max_score for term, score in scores.items()}
 
     @staticmethod
     def _is_noise(token: str) -> bool:
